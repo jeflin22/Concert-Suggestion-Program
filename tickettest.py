@@ -9,15 +9,15 @@ import time
 conn= sqlite3.connect('ticketmaster.db')
 c= conn.cursor()
 #---------------------------------------------------------
-c.execute("DROP TABLE IF EXISTS ARTIST")
+
 #c.execute("CREATE TABLE ARTIST (ArtistName text, EventName text, Venue text, Location text, Dates text)")
 #c.execute("CREATE TABLE IF NOT EXISTS ARTIST (ArtistName text, EventName text, Venue text, Location text, Dates text)")
 #---------------------------------------------------------
-c.execute("DROP TABLE IF EXISTS VENUES")
-c.execute("CREATE TABLE VENUES (Venue1 text, EventDate text)")
 
-c.execute("DROP TABLE IF EXISTS PERFORMERS")
-c.execute("CREATE TABLE PERFORMERS (EventName text, Venue text)")
+c.execute("CREATE TABLE IF NOT EXISTS Concerts (EventName, Venue1 text, EventDate text NOT NULL PRIMARY KEY)")
+
+
+c.execute("CREATE TABLE IF NOT EXISTS Tours (Artist_name, EventName NOT NULL PRIMARY KEY)")
 
 conn.commit()
 
@@ -35,20 +35,21 @@ for artist in artist_list:
     artist_name= artist
 
     if insert_count<=20:
+        time.sleep(0.5)
         pages = tm_client.events.find(
         keyword=artist_name,
         country_code='US',
         classification_name= 'music'
         ).all()
 
-        time.sleep(2)
+        
     
         if len(pages) == 0:
             print(None)
             continue
         
         for event in pages:
-            
+            time.sleep(0.5)
             print(event)
             #----------------------------
             new_event= str(event)
@@ -65,19 +66,22 @@ for artist in artist_list:
             lon = thing.longitude
             address= thing.location['address']
             venue_name= thing.name
-        
-            c.execute("INSERT OR IGNORE INTO PERFORMERS(EventName, Venue) VALUES(?,?)", (str(event_name), venue_name))
-            c.execute("INSERT OR IGNORE INTO VENUES(Venue1, EventDate) VALUES (?,?)", (venue_name, str(date1)))
-            if c.rowcount != None or 0:
-                insert_count += 1
+
+            if insert_count <= 20:
+                c.execute("INSERT OR IGNORE INTO Tours(Artist_name,EventName) VALUES(?,?)", (artist_name, event_name))
+                insert_count += c.rowcount
+                print(insert_count)
+                c.execute("INSERT OR IGNORE INTO Concerts(EventName, Venue1, EventDate) VALUES (?,?,?)", (event_name, venue_name, str(date1)))
+                
+                
+            
+                #c.execute("INSERT INTO ARTIST(ArtistName, EventName, Venue, Location, Dates) VALUES (?,?,?,?,?)", (str(artist_name), str(event_name), venue_name, address, str(date1)))
+                c.execute("DROP TABLE IF EXISTS JOINED")
+                c.execute('CREATE TABLE JOINED AS SELECT Tours.EventName, Concerts.Venue1, Concerts.EventDate FROM Tours LEFT JOIN Concerts ON Tours.EventName = Concerts.EventName')
+                        
+                conn.commit()
             else:
-                continue
-        
-            #c.execute("INSERT INTO ARTIST(ArtistName, EventName, Venue, Location, Dates) VALUES (?,?,?,?,?)", (str(artist_name), str(event_name), venue_name, address, str(date1)))
-            c.execute("DROP TABLE IF EXISTS JOINEDD")
-            c.execute('CREATE TABLE JOINEDD AS SELECT PERFORMERS.EventName, Venue, VENUES.EventDate FROM PERFORMERS LEFT JOIN VENUES ON PERFORMERS.Venue = VENUES.Venue1')
-                       
-            conn.commit()
+                break
             
     else:
         break 

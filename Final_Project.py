@@ -98,12 +98,9 @@ def store_database(list_of_tracks_dict):
     conn.commit()
 
 #function that returns a list of tuples(artist, count)
-def favorite_artists(fav_playlist, sp, username):
+def favorite_artists(list_of_tracks_dict, sp, username):
     artist_dict = {}
-    tracks_data = sp.user_playlist(username, fav_playlist['id'],
-                fields="tracks,next")
-    more_tracks_data = tracks_data['tracks']
-    list_of_tracks_dict = more_tracks_data['items']
+    
     for track_dict in list_of_tracks_dict:
         track = track_dict['track']
         artist = track['artists'][0]['name']
@@ -157,7 +154,7 @@ def main():
             tracks = sp.next(tracks)
             store_database(list_of_tracks_dict)
         
-        return_list = favorite_artists(fav_playlist, sp, username)
+        return_list = favorite_artists(list_of_tracks_dict, sp, username)
         return returning(return_list)
         
 
