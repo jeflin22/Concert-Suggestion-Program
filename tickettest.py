@@ -2,6 +2,8 @@
 import ticketpy
 import requests
 import sqlite3
+import Final_Project
+import time
 
 #keep asking for input until table is 100
 conn= sqlite3.connect('ticketmaster.db')
@@ -19,30 +21,34 @@ c.execute("CREATE TABLE PERFORMERS (EventName text, Venue text)")
 
 conn.commit()
 
+#import the artist list
+artist_list = Final_Project.main()
+
 #make one table that has artist name and venue (ArtistName, Venue)
 #make another table that has venue and date (Venue, Date) or (Venue and location)
 #----------------------------------------------------------
 tm_client = ticketpy.ApiClient('Ge10MzssvHWXSo6arD6m3yq2f2RkMIxH')
-event_total=0
 
-while event_total < 100:
 
-    artist_name= input('Enter an artist : ')
+insert_count=0
+for artist in artist_list:
+    artist_name= artist
 
-    
-    pages = tm_client.events.find(
+    if insert_count<=20:
+        pages = tm_client.events.find(
         keyword=artist_name,
         country_code='US',
-    ).all()
+        classification_name= 'music'
+        ).all()
 
-    if len(pages) == 0:
-        print(None)
-
-    twenty_count=0
-    for event in pages:
-        twenty_count+=1
-        if twenty_count<=20:
-            event_total+= 1
+        time.sleep(2)
+    
+        if len(pages) == 0:
+            print(None)
+            continue
+        
+        for event in pages:
+            
             print(event)
             #----------------------------
             new_event= str(event)
@@ -59,34 +65,21 @@ while event_total < 100:
             lon = thing.longitude
             address= thing.location['address']
             venue_name= thing.name
-            if event_total <= 100:
-                c.execute("INSERT INTO PERFORMERS(EventName, Venue) VALUES(?,?)", (str(event_name), venue_name))
-                c.execute("INSERT INTO VENUES(Venue1, EventDate) VALUES (?,?)", (venue_name, str(date1)))
-            
-                #c.execute("INSERT INTO ARTIST(ArtistName, EventName, Venue, Location, Dates) VALUES (?,?,?,?,?)", (str(artist_name), str(event_name), venue_name, address, str(date1)))
-                c.execute("DROP TABLE IF EXISTS JOINEDD")
-                c.execute('CREATE TABLE JOINEDD AS SELECT PERFORMERS.EventName, Venue, VENUES.EventDate FROM PERFORMERS LEFT JOIN VENUES ON PERFORMERS.Venue = VENUES.Venue1')
-                c.execute("DROP TABLE IF EXISTS JOINED")
-                c.execute('CREATE TABLE JOINED AS SELECT DISTINCT EventDate, EventName, Venue from JOINEDD')            
-                conn.commit()
+        
+            c.execute("INSERT OR IGNORE INTO PERFORMERS(EventName, Venue) VALUES(?,?)", (str(event_name), venue_name))
+            c.execute("INSERT OR IGNORE INTO VENUES(Venue1, EventDate) VALUES (?,?)", (venue_name, str(date1)))
+            if c.rowcount != None or 0:
+                insert_count += 1
             else:
-                continue 
+                continue
+        
+            #c.execute("INSERT INTO ARTIST(ArtistName, EventName, Venue, Location, Dates) VALUES (?,?,?,?,?)", (str(artist_name), str(event_name), venue_name, address, str(date1)))
+            c.execute("DROP TABLE IF EXISTS JOINEDD")
+            c.execute('CREATE TABLE JOINEDD AS SELECT PERFORMERS.EventName, Venue, VENUES.EventDate FROM PERFORMERS LEFT JOIN VENUES ON PERFORMERS.Venue = VENUES.Venue1')
+                       
+            conn.commit()
             
-            #c.execute('CREATE TABLE JOINEDD AS SELECT DISTINCT EventDate, Venue2, EventName from JOINED')
-            #print(thing.name)
-            print(lat)
-            print(lon)
-            #print(address)
-            #----------------------------
-            for item in event.classifications:
-                print(item.genre)
-            for item in event.price_ranges:
-                ticket_price=item['min']
-                print(ticket_price)
-            print(event_total)
-        #conn.commit()
     else:
-        continue
-    print(event_total)
-    #c.execute("DROP TABLE IF EXISTS JOINEDD")
-    #conn.commit()
+        break 
+            
+        
