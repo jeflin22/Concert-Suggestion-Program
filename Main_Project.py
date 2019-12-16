@@ -8,7 +8,7 @@ import time
 def create_database():
     conn = sqlite3.connect('ticketmasterdata.sqlite')
     cur = conn.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS Performances (Event_name text, Venue text, Event_date NOT NULL PRIMARY KEY)")
+    cur.execute("CREATE TABLE IF NOT EXISTS Performances (Event_name text, Venue text, Event_date NOT NULL PRIMARY KEY, Coordinates text)")
     cur.execute("CREATE TABLE IF NOT EXISTS Tours (Artist_name text, Tour_name text NOT NULL PRIMARY KEY)")
     conn.commit()
     conn.close()
@@ -37,11 +37,15 @@ def store_database(sorted_list, ticketconn):
     insert_count = 0
     #do stuff so loop starts at last artist in database table
     cur.execute("SELECT * FROM Tours")
-    last_artist = cur.fetchall()[-1][0]
-    artist_list = []
-    for artist_tuple in sorted_list:
-        artist_list.append(artist_tuple[0])
-    index = artist_list.index(last_artist)
+    tuples = cur.fetchall()
+    if len(tuples) > 0:
+        last_artist = tuples[-1][0]
+        artist_list = []
+        for artist_tuple in sorted_list:
+            artist_list.append(artist_tuple[0])
+        index = artist_list.index(last_artist)
+    else:
+        index = 0
     for artist_tuple in sorted_list[index:]:
         if insert_count < 20:
             artist = artist_tuple[0]
@@ -72,17 +76,18 @@ def store_database(sorted_list, ticketconn):
                     thing = venues[0]
                     lat = thing.latitude
                     lon = thing.longitude
+                    coordinates = (lat,lon)
                     address= thing.location['address']
                     venue_name= thing.name
                     #Now we store all this into the database
-                    cur.execute("INSERT OR IGNORE INTO Performances(Event_name, Venue, Event_date) VALUES (?,?,?)", (event_name, venue_name, str(date1)))
+                    cur.execute("INSERT OR IGNORE INTO Performances(Event_name, Venue, Event_date, Coordinates) VALUES (?,?,?,?)", (event_name, venue_name, str(date1), str(coordinates)))
                 
                     if cur.rowcount != 0 or None:
                         insert_count += cur.rowcount
                     cur.execute("INSERT OR IGNORE INTO Tours(Artist_name, Tour_name) VALUES(?,?)", (artist, event_name))
                     cur.execute("DROP TABLE IF EXISTS JOINED")
-                    cur.execute("CREATE TABLE JOINED AS SELECT Tours.Tour_name, Performances.Venue, Performances.Event_date FROM Tours LEFT JOIN Performances ON Tours.Tour_name = Performances.Event_name")
-                    
+                    cur.execute("CREATE TABLE JOINED AS SELECT Tours.Artist_name, Tours.Tour_name, Performances.Venue, Performances.Event_date, Performances.Coordinates FROM Tours LEFT JOIN Performances ON Tours.Tour_name = Performances.Event_name")
+                    cur.execute("DELETE FROM JOINED WHERE Venue IS NULL OR trim(Venue) = ''")
                 else:
                     break
             ticketconn.commit()      
