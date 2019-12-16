@@ -15,24 +15,18 @@ def main_playlist(playlists):
     for playlist in list_of_playlists:
         if playlist['tracks']['total'] > fav_playlist['tracks']['total']:
             fav_playlist = playlist
+            
+   
     
     return fav_playlist
 
 #function for storing data in database, need to do SQL Shit
 def create_database():
-    conn = sqlite3.connect('spotifydata.sqlite')
+    conn = sqlite3.connect('spotifydata.sqlite', timeout=10)
     cur = conn.cursor()
     
     
-    #playlist_name = fav_playlist['name']#TEXT
     
-    #num_of_tracks = fav_playlist['tracks']['total']#INTEGER
-    #tracks_data = sp.user_playlist(username, fav_playlist['id'],
-                #fields="tracks,next")
-    #more_tracks_data = tracks_data['tracks']
-    
-    #list_of_tracks_dict = more_tracks_data['items']
-    #new_playlist_name = re.sub('[^A-Za-z0-9]+', '', playlist_name)
     cur.executescript('''CREATE TABLE IF NOT EXISTS Playlist
                 ( 
                 track_name TEXT PRIMARY KEY, 
@@ -43,6 +37,7 @@ def create_database():
                 artist_name TEXT,
                 album_name TEXT)''')
     conn.commit()
+    conn.close()
     #return list_of_tracks_dict
 
 def get_data(fav_playlist, sp, username):
@@ -63,21 +58,27 @@ def store_database(list_of_tracks_dict):
     conn = sqlite3.connect('spotifydata.sqlite')
     cur = conn.cursor()
     insert_count = 0
+    
     for tracks_dict in list_of_tracks_dict:
-        track_dict = tracks_dict['track']
-        track_name = track_dict['name']#TEXT
-        artist_name = track_dict['artists'][0]['name']#TEXT
-        album_name = track_dict['album']['name']#TEXT
-        
-        cur.execute('''INSERT OR IGNORE INTO Playlist (track_name, album_name) VALUES (?,?)''', (track_name, album_name))
+        if insert_count == 20:
+            break
+        else:
+            track_dict = tracks_dict['track']
+            track_name = track_dict['name']#TEXT
+            artist_name = track_dict['artists'][0]['name']#TEXT
+            album_name = track_dict['album']['name']#TEXT
+            
+            cur.execute('''INSERT OR IGNORE INTO Playlist (track_name, album_name) VALUES (?,?)''', (track_name, album_name))
 
-        inserted = cur.rowcount
-        if inserted != None or -1:
-            insert_count += inserted
-        
-        cur.execute('''INSERT OR IGNORE INTO Artists (artist_name, album_name) VALUES (?,?)''', (artist_name, album_name))
-        
-        if insert_count > 19: break
+            inserted = cur.rowcount
+            if inserted != None or -1:
+                insert_count += inserted
+            
+            cur.execute('''INSERT OR IGNORE INTO Artists (artist_name, album_name) VALUES (?,?)''', (artist_name, album_name))
+    
+    
+    #Deleting duplicates and creating joined table        
+            
     
     cur.execute('''DELETE FROM Artists
                 WHERE id NOT IN
@@ -96,6 +97,7 @@ def store_database(list_of_tracks_dict):
                 ON Playlist.album_name = Artists.album_name''')
    
     conn.commit()
+    return insert_count
 
 #function that returns a list of tuples(artist, count)
 def favorite_artists(list_of_tracks_dict, sp, username):
@@ -108,6 +110,7 @@ def favorite_artists(list_of_tracks_dict, sp, username):
             artist_dict[artist] = 1
         else:
             artist_dict[artist] += 1
+    
     return artist_dict.items()
     
 def returning(return_list):
@@ -143,19 +146,25 @@ def main():
         playlists = sp.user_playlists(username)
         
         fav_playlist = main_playlist(playlists)
+         
 
         create_database()
         
         list_of_tracks_dict = get_data(fav_playlist, sp, username)
-        
-        results = sp.user_playlist(username, fav_playlist['id'], fields="tracks,next")
-        tracks = results['tracks']
-        while tracks['next']:
-            tracks = sp.next(tracks)
-            store_database(list_of_tracks_dict)
-        
+        insert_count = store_database(list_of_tracks_dict)
+        print("New rows added to spotify database: {}".format(insert_count))
+        if insert_count == 0:
+            results = sp.user_playlist(username, fav_playlist['id'], fields="tracks,next")
+            tracks = results['tracks']
+            while tracks['next']:
+                tracks = sp.next(tracks)
+                store_database(list_of_tracks_dict)
         return_list = favorite_artists(list_of_tracks_dict, sp, username)
-        return returning(return_list)
+        print(return_list)
+        return insert_count
+        
+        
+        
         
 
     else:
