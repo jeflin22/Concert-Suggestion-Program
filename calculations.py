@@ -66,6 +66,7 @@ def quickmaths(x1, y1, joined_data):
     file.write("The closest concert is {} performing on {} at {}, {} kilometers away from your position".format(artist, date, venue, shortest))
     file.close()
 def main():
+    print('\n Performing NASA tier mathematical calculations...')
     x1, y1 = user_coordinates()
     conn = sqlite3.connect('ticketmasterdata.sqlite')
     joined_data = get_database_coordinates(conn)

@@ -108,6 +108,7 @@ def main():
     else:
 
     #now call the other functions
+        print("\n Executing Ticketmaster program \n")
         sorted_list = fetch_artists(spotifyconn)
         spotifyconn.close()
         ticketconn = sqlite3.connect('ticketmasterdata.sqlite')

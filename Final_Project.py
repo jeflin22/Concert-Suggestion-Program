@@ -160,7 +160,7 @@ def main():
                 tracks = sp.next(tracks)
                 store_database(list_of_tracks_dict)
         return_list = favorite_artists(list_of_tracks_dict, sp, username)
-        print(return_list)
+        
         return insert_count
         
         
