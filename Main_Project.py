@@ -60,7 +60,7 @@ def store_database(sorted_list, ticketconn):
             if len(pages) == 0:
                 print("{} is currently not touring in the U.S.".format(artist))
             else:
-                print("{} is performing!".format(artist))
+                print("{} is performing, adding concerts to Database!".format(artist))
             
             for event in pages:
                 if insert_count < 20:
@@ -70,7 +70,7 @@ def store_database(sorted_list, ticketconn):
                     date1= date.replace(" ", '')
                     date1= date1.split(":")
                     date1=date1[1]
-                    print(str(date1))
+                    #print(str(date1))
                     event_name=event.name
                     venues = event.venues
                     thing = venues[0]
@@ -104,10 +104,12 @@ def main():
     num_rows = len(cur.fetchall())
     #run spotify program until number of new rows = 0
     while new_rows != 0 or None:
+        print("\n Database not full yet, input again!")
         new_rows = Final_Project.main()
     else:
 
     #now call the other functions
+        print("Spotify Database complete...")
         print("\n Executing Ticketmaster program \n")
         sorted_list = fetch_artists(spotifyconn)
         spotifyconn.close()

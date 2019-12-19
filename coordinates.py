@@ -24,5 +24,4 @@ def getLocation():
     latitude = str(latitude[0])    
     driver.quit()    
     return (latitude,longitude)
-print("\n Your location is:")
-print(getLocation())
+

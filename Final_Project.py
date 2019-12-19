@@ -97,6 +97,7 @@ def store_database(list_of_tracks_dict):
                 ON Playlist.album_name = Artists.album_name''')
    
     conn.commit()
+    
     return insert_count
 
 #function that returns a list of tuples(artist, count)

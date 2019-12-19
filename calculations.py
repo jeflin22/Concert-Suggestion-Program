@@ -8,6 +8,8 @@ def user_coordinates():
     x1 = float(x1)
     y1 = user_coord[1].strip('')
     y1 = float(y1)
+    print("\n Your location is:")
+    print(x1, y1)
     return x1, y1
 
 def get_database_coordinates(conn):
