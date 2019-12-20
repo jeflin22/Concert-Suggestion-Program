@@ -3,6 +3,7 @@ import sqlite3
 import calculations
 
 
+
 #Running the spotify and ticketmaster program until items in ticketmaster database reaches 100 items
 conn = sqlite3.connect("ticketmasterdata.sqlite")
 cur = conn.cursor()
@@ -16,3 +17,11 @@ while num_rows <= 150:
 calculations.main()
 
 #execute visualization program
+import visuals
+try:
+
+    import mapmap
+except:
+    print('You have incorrectly installed the Basemap module, try again!')
+
+conn.close()
